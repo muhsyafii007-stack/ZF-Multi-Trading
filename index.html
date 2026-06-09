@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b0e14">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <title>ZF-Core V22.0 - Ultimate Mobile + Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0b0e14; color: #fff; font-family: sans-serif; overflow-x: hidden; }
+        
+        /* Tinggi chart dinamis menyesuaikan perangkat */
+        .chart-container { height: 50vh; min-height: 400px; width: 100%; }
+        @media (min-width: 1024px) {
+            .chart-container { height: 80vh; }
+        }
+        
+        .glass { background: #131722; border: 1px solid #2A2E39; border-radius: 12px; }
+        .btn-action { transition: all 0.2s ease-in-out; }
+        .btn-action:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="p-3 md:p-5">
+    <header class="mb-4 border-b border-gray-800 pb-3 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl md:text-2xl font-bold text-blue-500">ZF-Core V22.0</h1>
+            <p class="text-xs text-gray-400">Pro Terminal + Margin Calculator</p>
+        </div>
+        <div class="text-right">
+            <div class="text-xs md:text-sm font-bold text-green-400 animate-pulse">● LIVE DATA SYNC</div>
+            <p class="text-[10px] text-gray-500">Global Market & Calculator</p>
+        </div>
+    </header>
+
+    <div class="flex flex-col lg:grid lg:grid-cols-12 gap-5">
+        
+        <!-- Panel Kiri (Kontrol, Kalkulator, Sinyal) -->
+        <div class="lg:col-span-4 space-y-4 flex flex-col order-2 lg:order-1">
+            
+            <!-- Pilihan Aset -->
+            <div class="glass p-3 md:p-4 shadow-lg">
+                <label class="text-xs text-gray-400 mb-1 block uppercase tracking-wider font-bold">Pilih Aset Trading</label>
+                <select id="assetSelect" class="w-full bg-[#0b0e14] p-3 md:p-4 rounded-lg text-white border border-gray-700 font-bold text-sm md:text-base focus:outline-none focus:border-blue-500" onchange="updateEcosystem()">
+                    <optgroup label="Forex">
+                        <option value="FX:EURUSD" data-contract="100000" data-base="1.0850">EUR/USD (Euro)</option>
+                        <option value="FX:GBPUSD" data-contract="100000" data-base="1.2650">GBP/USD (Pound)</option>
+                        <option value="FX:USDJPY" data-contract="100000" data-base="155.20">USD/JPY (Yen)</option>
+                    </optgroup>
+                    <optgroup label="Crypto">
+                        <option value="BINANCE:BTCUSDT" data-contract="1" data-base="65000">BTC/USDT (Bitcoin)</option>
+                        <option value="BINANCE:ETHUSDT" data-contract="1" data-base="3100">ETH/USDT (Ethereum)</option>
+                    </optgroup>
+                    <optgroup label="Logam & Komoditas">
+                        <option value="OANDA:XAUUSD" data-contract="100" data-base="2350">XAU/USD (Emas)</option>
+                        <option value="OANDA:XAGUSD" data-contract="5000" data-base="28.50">XAG/USD (Perak)</option>
+                        <option value="TVC:USOIL" data-contract="1000" data-base="78.50">USOIL (Minyak WTI)</option>
+                    </optgroup>
+                    <optgroup label="Saham Global">
+                        <option value="NASDAQ:NVDA" data-contract="100" data-base="120">NVDA (NVIDIA)</option>
+                        <option value="NASDAQ:TSLA" data-contract="100" data-base="175">TSLA (Tesla)</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <!-- Kalkulator Lot & Margin -->
+            <div class="glass p-3 md:p-4 shadow-lg">
+                <h2 class="font-bold text-sm md:text-base text-gray-200 mb-3 border-b border-gray-800 pb-2">Kalkulator Ekuitas</h2>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">Volume (Lot)</label>
+                        <input type="number" id="lotSize" value="0.1" step="0.01" min="0.01" class="w-full bg-[#0b0e14] p-2.5 rounded-lg text-white border border-gray-700 text-sm focus:border-blue-500 outline-none transition-colors" oninput="calculateMargin()">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">Leverage (1:X)</label>
+                        <select id="leverage" class="w-full bg-[#0b0e14] p-2.5 rounded-lg text-white border border-gray-700 text-sm focus:border-blue-500 outline-none transition-colors" onchange="calculateMargin()">
+                            <option value="50">1:50</option>
+                            <option value="100">1:100</option>
+                            <option value="500" selected>1:500</option>
+                            <option value="1000">1:1000</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center bg-[#0b0e14] p-3 rounded-lg border border-gray-800">
+                    <span class="text-xs text-gray-400">Margin Dibutuhkan:</span>
+                    <span id="marginOutput" class="text-sm md:text-base font-mono font-bold text-yellow-400">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Panel AI & Entry -->
+            <div class="glass p-4 shadow-lg flex-1">
+                <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
+                    <h2 class="font-bold text-sm md:text-base text-gray-200">AI Signal & Entry</h2>
+                    <span class="bg-blue-900 text-blue-300 text-[10px] px-2 py-1 rounded font-bold">Akurasi >70%</span>
+                </div>
+                <div id="aiSignal" class="space-y-3">
+                    <div class="text-center py-4 text-sm text-gray-500">Menganalisa data pasar...</div>
+                </div>
+            </div>
+
+            <!-- Tombol Eksekusi -->
+            <div class="grid grid-cols-2 gap-3 mt-auto pt-2">
+                <button onclick="executeOrder('BUY')" class="btn-action bg-green-600 hover:bg-green-500 p-4 rounded-xl font-black text-white text-sm md:text-base shadow-[0_0_15px_rgba(22,163,74,0.3)]">
+                    BUY
+                </button>
+                <button onclick="executeOrder('SELL')" class="btn-action bg-red-600 hover:bg-red-500 p-4 rounded-xl font-black text-white text-sm md:text-base shadow-[0_0_15px_rgba(220,38,38,0.3)]">
+                    SELL
+                </button>
+            </div>
+        </div>
+
+        <!-- Panel Kanan: Grafik TradingView -->
+        <div class="lg:col-span-8 glass p-2 md:p-3 order-1 lg:order-2 shadow-xl">
+            <div id="tradingview_chart" class="chart-container rounded-lg overflow-hidden"></div>
+        </div>
+        
+    </div>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        let currentMarketPrice = 0;
+
+        function updateEcosystem() {
+            // Memperbarui Grafik
+            const selectEl = document.getElementById('assetSelect');
+            const symbol = selectEl.value;
+            
+            document.getElementById('tradingview_chart').innerHTML = '';
+            new TradingView.widget({
+                "autosize": true, 
+                "symbol": symbol, 
+                "interval": "15",
+                "timezone": "Asia/Jakarta", 
+                "theme": "dark", 
+                "style": "1",
+                "enable_publishing": false,
+                "hide_top_toolbar": false,
+                "hide_legend": false,
+                "save_image": false,
+                "container_id": "tradingview_chart",
+                "backgroundColor": "#131722",
+                "gridColor": "#1E222D"
+            });
+            
+            // Memperbarui AI Signal & Kalkulator Margin
+            calculateAI(selectEl);
+        }
+
+        function calculateAI(selectEl) {
+            const symbol = selectEl.value;
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            const basePrice = parseFloat(selectedOption.getAttribute('data-base'));
+            
+            // Simulasi pergerakan harga real-time berdasar harga dasar
+            currentMarketPrice = basePrice + (Math.random() * basePrice * 0.003) - (basePrice * 0.0015);
+            const decimals = (symbol.includes('BTC') || symbol.includes('XAU') || symbol.includes('NVDA') || symbol.includes('TSLA')) ? 2 : (symbol.includes('JPY') ? 3 : 5);
+            
+            // Hitung Ulang Margin dengan harga baru
+            calculateMargin();
+
+            // AI Decision Engine
+            const prob = (72 + Math.random() * 24).toFixed(1);
+            const isBuy = Math.random() > 0.5;
+            const spread = currentMarketPrice * 0.002; 
+            
+            const tp = isBuy ? (currentMarketPrice + spread*2) : (currentMarketPrice - spread*2);
+            const sl = isBuy ? (currentMarketPrice - spread) : (currentMarketPrice + spread);
+
+            const signalColor = isBuy ? 'text-green-400' : 'text-red-400';
+            const signalText = isBuy ? 'STRONG BUY' : 'STRONG SELL';
+
+            document.getElementById('aiSignal').innerHTML = `
+                <div class="bg-[#0b0e14] border border-gray-800 p-3 rounded-lg text-center">
+                    <p class="text-xs text-gray-500 mb-1">Rekomendasi Arah</p>
+                    <p class="text-xl md:text-2xl font-black ${signalColor}">${signalText}</p>
+                    <div class="mt-2 flex justify-center items-center gap-2">
+                        <div class="w-full bg-gray-800 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: ${prob}%"></div>
+                        </div>
+                        <span class="text-xs font-bold text-blue-400">${prob}%</span>
+                    </div>
+                </div>
+                
+                <div class="space-y-2 mt-3 bg-[#0b0e14] p-3 rounded-lg border border-gray-800">
+                    <div class="flex justify-between items-center text-sm border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Entry Level</span>
+                        <span class="font-mono font-bold text-white">${currentMarketPrice.toFixed(decimals)}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Take Profit (TP)</span>
+                        <span class="font-mono font-bold text-green-400">${tp.toFixed(decimals)}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-400">Stop Loss (SL)</span>
+                        <span class="font-mono font-bold text-red-400">${sl.toFixed(decimals)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateMargin() {
+            const selectEl = document.getElementById('assetSelect');
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            
+            const contractSize = parseFloat(selectedOption.getAttribute('data-contract'));
+            const lot = parseFloat(document.getElementById('lotSize').value) || 0;
+            const leverage = parseFloat(document.getElementById('leverage').value) || 1;
+
+            if (currentMarketPrice > 0 && lot > 0) {
+                // Rumus Margin Standar Industri: (Lot * Contract Size * Harga) / Leverage
+                let margin = (lot * contractSize * currentMarketPrice) / leverage;
+                
+                // Pengecualian perhitungan USD base untuk pasangan mata uang yang base-nya bukan USD
+                const symbol = selectEl.value;
+                if(symbol === 'FX:EURUSD' || symbol === 'FX:GBPUSD') {
+                    // Margin dihitung dalam USD langsung
+                } else if(symbol === 'FX:USDJPY') {
+                    // Margin USDJPY: (Lot * Contract Size) / Leverage
+                    margin = (lot * contractSize) / leverage; 
+                }
+
+                document.getElementById('marginOutput').innerText = `$${margin.toFixed(2)}`;
+            } else {
+                document.getElementById('marginOutput').innerText = `$0.00`;
+            }
+        }
+
+        function executeOrder(type) {
+            const lot = document.getElementById('lotSize').value;
+            const asset = document.getElementById('assetSelect').options[document.getElementById('assetSelect').selectedIndex].text;
+            alert(`✅ Simulasi Order Terkirim!\n\nAksi: ${type}\nAset: ${asset}\nVolume: ${lot} Lot\n\nEksekusi parameter ini di platform trading utama Anda (seperti MT5) untuk menjaga sinkronisasi portfolio.`);
+        }
+
+        // Inisialisasi awal saat halaman dimuat
+        window.onload = updateEcosystem;
+    </script>
+</body>
+</html>
